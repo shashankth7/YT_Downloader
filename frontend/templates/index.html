@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>YT_Downloader</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+  <header>
+    <div class="logo-wrap">
+      <span class="logo-bracket">[</span>
+      <span class="logo-text">YT_Downloader</span>
+      <span class="logo-bracket">]</span>
+    </div>
+    <div class="header-sub">v2.0 · yt-dlp powered</div>
+  </header>
+
+  <main>
+    <div class="card">
+
+      <!-- Status indicator -->
+      <div class="status-bar" id="statusBar">
+        <span class="status-dot" id="statusDot"></span>
+        <span class="status-text" id="statusText">Ready</span>
+      </div>
+
+      <!-- Video info (hidden initially) -->
+      <div class="video-info" id="videoInfo" style="display:none;">
+        <div class="vi-label">Detected</div>
+        <div class="vi-title" id="viTitle">—</div>
+        <div class="vi-meta">
+          <span id="viUploader">—</span>
+          <span class="vi-sep">·</span>
+          <span id="viDuration">—</span>
+        </div>
+      </div>
+
+      <!-- URL Input -->
+      <div class="field-group">
+        <label class="field-label">YouTube URL</label>
+        <div class="input-wrap">
+          <span class="input-icon">▶</span>
+          <input
+            type="text"
+            id="urlInput"
+            placeholder="https://www.youtube.com/watch?v=..."
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button class="clear-btn" id="clearUrl" title="Clear">✕</button>
+        </div>
+      </div>
+
+      <!-- Output Path -->
+      <div class="field-group">
+        <label class="field-label">Save to</label>
+        <div class="path-wrap">
+          <span class="input-icon">📁</span>
+          <input
+            type="text"
+            id="outputPath"
+            placeholder="~/Downloads"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button class="browse-btn" id="browseBtn">Browse</button>
+        </div>
+        <!-- Hidden file input for directory selection -->
+        <input type="file" id="dirPicker" webkitdirectory style="display:none" />
+      </div>
+
+      <!-- Progress -->
+      <div class="progress-section" id="progressSection" style="display:none;">
+        <div class="progress-header">
+          <span class="progress-label" id="progressLabel">Downloading…</span>
+          <span class="progress-pct" id="progressPct">0%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+          <div class="progress-glow" id="progressGlow"></div>
+        </div>
+        <div class="progress-meta">
+          <span id="progressSpeed">—</span>
+          <span id="progressEta">ETA —</span>
+        </div>
+      </div>
+
+      <!-- Download Button -->
+      <button class="download-btn" id="downloadBtn">
+        <span class="btn-icon">↓</span>
+        <span class="btn-text">Download</span>
+      </button>
+
+      <!-- Logs Toggle -->
+      <button class="logs-toggle" id="logsToggle">
+        <span class="toggle-arrow" id="toggleArrow">▶</span>
+        <span>Show Logs</span>
+        <span class="log-badge" id="logBadge" style="display:none;">0</span>
+      </button>
+
+      <!-- Logs -->
+      <div class="logs-section" id="logsSection">
+        <div class="logs-toolbar">
+          <span class="logs-title">// output</span>
+          <button class="clear-logs-btn" id="clearLogs">clear</button>
+        </div>
+        <div class="logs-body" id="logsBody"></div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer>
+    <span>Built with yt-dlp · Flask · WebSockets</span>
+  </footer>
+
+  <!-- Success Toast -->
+  <div class="toast" id="successToast">
+    <span class="toast-icon">✓</span>
+    <span class="toast-text" id="toastText">Download complete!</span>
+  </div>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
