@@ -18,7 +18,6 @@ A simple and clean web application to download YouTube videos with real-time pro
 ## 🏗️ Project Structure
 
 ```
-```
 YT_Downloader/
 ├── backend/
 │   └── app.py              # Flask + SocketIO server
