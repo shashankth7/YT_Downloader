@@ -1,12 +1,14 @@
 import os
 import threading
 
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
+from werkzeug.utils import secure_filename
 from flask_socketio import SocketIO, emit
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEMPLATE_DIR = os.path.join(BASE_DIR, 'frontend', 'templates')
 STATIC_DIR   = os.path.join(BASE_DIR, 'frontend', 'static')
+COOKIES_DIR   = os.path.join(BASE_DIR, 'backend', 'cookies')
 
 app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
 app.config['SECRET_KEY'] = 'yt_downloader_secret'
@@ -81,7 +83,14 @@ def run_download(url, output_path, sid):
             'progress_hooks': [progress_hook],
             'logger': LogCapture(),
         }
-
+        # If a cookiefile path was provided via download_state, use it
+        cookiefile = download_state.get('cookiefile')
+        if cookiefile:
+            if os.path.exists(cookiefile):
+                ydl_opts['cookiefile'] = cookiefile
+                emit_safe('log', {'message': f'[info] Using cookiefile: {cookiefile}', 'level': 'info'}, sid)
+            else:
+                emit_safe('log', {'message': f'[warning] Cookiefile not found: {cookiefile}', 'level': 'warning'}, sid)
         emit_safe('log', {'message': '[info] Fetching video info...', 'level': 'info'}, sid)
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -104,6 +113,8 @@ def run_download(url, output_path, sid):
     finally:
         download_state['running'] = False
         download_state['sid'] = None
+        # clear cookiefile from shared state after run
+        download_state['cookiefile'] = None
 
 
 @app.route('/')
@@ -111,11 +122,68 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/upload_cookies', methods=['POST'])
+def upload_cookies():
+    if 'cookies' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    f = request.files['cookies']
+    if f.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    filename = secure_filename(f.filename)
+    os.makedirs(COOKIES_DIR, exist_ok=True)
+    path = os.path.join(COOKIES_DIR, filename)
+    f.save(path)
+    return jsonify({'path': path, 'filename': filename})
+
+
+@app.route('/list_dir', methods=['GET'])
+def list_dir():
+    # Return a JSON list of directories for a given path (server-side browsing)
+    req_path = request.args.get('path')
+    if not req_path:
+        req_path = os.path.expanduser('~')
+
+    # Normalize and ensure path exists
+    req_path = os.path.abspath(os.path.expanduser(req_path))
+    if not os.path.exists(req_path):
+        return jsonify({'error': 'Path not found'}), 404
+
+    entries = []
+    try:
+        for name in sorted(os.listdir(req_path)):
+            full = os.path.join(req_path, name)
+            if os.path.isdir(full):
+                entries.append({'name': name, 'path': full})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+    parent = os.path.dirname(req_path) if req_path != '/' else None
+    return jsonify({'path': req_path, 'parent': parent, 'dirs': entries})
+
+
+@app.route('/make_dir', methods=['POST'])
+def make_dir():
+    data = request.get_json() or {}
+    parent = data.get('parent')
+    name = data.get('name')
+    if not parent or not name:
+        return jsonify({'error': 'parent and name required'}), 400
+
+    parent = os.path.abspath(os.path.expanduser(parent))
+    new_path = os.path.join(parent, secure_filename(name))
+    try:
+        os.makedirs(new_path, exist_ok=True)
+        return jsonify({'path': new_path, 'name': os.path.basename(new_path)})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @socketio.on('start_download')
 def handle_download(data):
     url         = data.get('url', '').strip()
     output_path = data.get('output_path', '').strip()
     sid         = request.sid
+    cookiefile   = data.get('cookiefile')
 
     if not url:
         emit('done', {'success': False, 'message': 'Please enter a YouTube URL.'})
@@ -127,6 +195,9 @@ def handle_download(data):
     if download_state['running']:
         emit('done', {'success': False, 'message': 'A download is already in progress.'})
         return
+
+    # Attach cookiefile path into shared state for the download thread
+    download_state['cookiefile'] = cookiefile
 
     thread = threading.Thread(target=run_download, args=(url, output_path, sid), daemon=True)
     thread.start()

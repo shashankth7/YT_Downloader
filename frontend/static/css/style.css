@@ -530,3 +530,31 @@ footer {
   .card { padding: 20px 16px; }
   header { padding: 28px 16px 16px; }
 }
+
+/* Modal / directory browser */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+.modal-content {
+  width: 90%;
+  max-width: 720px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+}
+.modal-header { font-family: var(--mono); margin-bottom: 8px; }
+.modal-path { font-family: var(--mono); font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+.modal-actions { display:flex; gap:8px; margin-bottom:10px; }
+.dir-list { max-height: 320px; overflow:auto; border:1px solid var(--border2); padding:8px; border-radius:6px; background:var(--surface2); }
+.dir-item { padding:8px 10px; border-radius:6px; cursor:pointer; color:var(--text); }
+.dir-item:hover { background: rgba(255,255,255,0.02); }
+.dir-item.up { font-style:italic; color:var(--muted2); }
+.modal-footer { display:flex; justify-content:flex-end; gap:8px; margin-top:10px; }
+.modal-footer button { padding:8px 12px; border-radius:6px; border:none; cursor:pointer; }

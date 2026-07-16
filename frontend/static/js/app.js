@@ -9,6 +9,14 @@ const outputPath     = document.getElementById('outputPath');
 const browseBtn      = document.getElementById('browseBtn');
 const dirPicker      = document.getElementById('dirPicker');
 const downloadBtn    = document.getElementById('downloadBtn');
+const folderModal     = document.getElementById('folderModal');
+const modalPath      = document.getElementById('modalPath');
+const dirList        = document.getElementById('dirList');
+const modalUp        = document.getElementById('modalUp');
+const modalCancel    = document.getElementById('modalCancel');
+const modalOk        = document.getElementById('modalOk');
+const createFolder   = document.getElementById('createFolder');
+const newFolderName  = document.getElementById('newFolderName');
 const progressSection= document.getElementById('progressSection');
 const progressFill   = document.getElementById('progressFill');
 const progressGlow   = document.getElementById('progressGlow');
@@ -97,7 +105,7 @@ clearUrl.addEventListener('click', () => {
 });
 
 // ── Browse ──
-browseBtn.addEventListener('click', () => dirPicker.click());
+// Browse now opens the server-side folder browser modal instead of the client file picker.
 
 dirPicker.addEventListener('change', (e) => {
   const files = e.target.files;
@@ -109,6 +117,92 @@ dirPicker.addEventListener('change', (e) => {
     const dirName = parts[0];
     outputPath.value = dirName;
     appendLog(`[info] Output folder selected: ${dirName}`, 'info');
+  }
+});
+
+// ── Folder Browser Modal ──
+let currentBrowsePath = null;
+
+async function fetchDir(path) {
+  const url = '/list_dir' + (path ? ('?path=' + encodeURIComponent(path)) : '');
+  const res = await fetch(url);
+  return res.json();
+}
+
+function renderDirList(data) {
+  dirList.innerHTML = '';
+  modalPath.textContent = data.path;
+  currentBrowsePath = data.path;
+
+  if (data.parent) {
+    const upEl = document.createElement('div');
+    upEl.className = 'dir-item up';
+    upEl.textContent = '.. (parent)';
+    upEl.addEventListener('click', () => openBrowse(data.parent));
+    dirList.appendChild(upEl);
+  }
+
+  data.dirs.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'dir-item';
+    el.textContent = d.name;
+    el.addEventListener('click', () => openBrowse(d.path));
+    dirList.appendChild(el);
+  });
+}
+
+async function openBrowse(path) {
+  const data = await fetchDir(path);
+  if (data.error) {
+    appendLog('[error] ' + data.error, 'error');
+    return;
+  }
+  renderDirList(data);
+  folderModal.style.display = 'block';
+}
+
+browseBtn.addEventListener('click', () => {
+  // Open starting at home directory
+  openBrowse();
+});
+
+modalUp.addEventListener('click', () => {
+  if (!currentBrowsePath) return;
+  const parent = currentBrowsePath === '/' ? '/' : currentBrowsePath.split('/').slice(0, -1).join('/') || '/';
+  openBrowse(parent);
+});
+
+modalCancel.addEventListener('click', () => {
+  folderModal.style.display = 'none';
+});
+
+modalOk.addEventListener('click', () => {
+  if (currentBrowsePath) {
+    outputPath.value = currentBrowsePath;
+    appendLog('[info] Output path set: ' + currentBrowsePath, 'info');
+  }
+  folderModal.style.display = 'none';
+});
+
+createFolder.addEventListener('click', async () => {
+  const name = newFolderName.value.trim();
+  if (!name) return;
+  try {
+    const res = await fetch('/make_dir', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({parent: currentBrowsePath, name})
+    });
+    const data = await res.json();
+    if (data.error) {
+      appendLog('[error] ' + data.error, 'error');
+      return;
+    }
+    appendLog('[info] Created folder: ' + data.path, 'info');
+    newFolderName.value = '';
+    openBrowse(data.path);
+  } catch (e) {
+    appendLog('[error] ' + e.message, 'error');
   }
 });
 

@@ -123,6 +123,27 @@
     <span class="toast-icon">✓</span>
     <span class="toast-text" id="toastText">Download complete!</span>
   </div>
+  <!-- Folder Picker Modal -->
+  <div class="modal" id="folderModal" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <strong>Select Output Folder</strong>
+      </div>
+      <div class="modal-body">
+        <div class="modal-path">Current: <span id="modalPath">/</span></div>
+        <div class="modal-actions">
+          <button id="modalUp">Up</button>
+          <input id="newFolderName" placeholder="New folder name" />
+          <button id="createFolder">Create</button>
+        </div>
+        <div id="dirList" class="dir-list"></div>
+      </div>
+      <div class="modal-footer">
+        <button id="modalCancel">Cancel</button>
+        <button id="modalOk">OK</button>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script src="/static/js/app.js"></script>
